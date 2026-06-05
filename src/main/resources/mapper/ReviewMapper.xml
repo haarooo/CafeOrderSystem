@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.cafeordersystem.review.mapper.ReviewMapper">
+
+    <select id="existsByOrderId" resultType="int">
+        SELECT COUNT(*)
+        FROM review
+        WHERE order_id = #{orderId}
+    </select>
+
+    <insert id="insertReview"
+            parameterType="com.example.cafeordersystem.review.dto.ReviewCreateRequestDto">
+        INSERT INTO review (
+        order_id,
+        review_content,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{orderId},
+        #{reviewContent},
+        NOW(),
+        NOW()
+        )
+    </insert>
+
+    <select id="findByOrderId"
+            resultType="com.example.cafeordersystem.review.dto.ReviewRow">
+        SELECT
+        review_id AS reviewId,
+        order_id AS orderId,
+        review_content AS reviewContent,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM review
+        WHERE order_id = #{orderId}
+    </select>
+
+    <select id="findByReviewId"
+            resultType="com.example.cafeordersystem.review.dto.ReviewRow">
+        SELECT
+        review_id AS reviewId,
+        order_id AS orderId,
+        review_content AS reviewContent,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM review
+        WHERE review_id = #{reviewId}
+    </select>
+
+    <select id="findReviewsByPaging"
+            resultType="com.example.cafeordersystem.review.dto.ReviewRow">
+        SELECT
+        review_id AS reviewId,
+        order_id AS orderId,
+        review_content AS reviewContent,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM review
+        ORDER BY created_at DESC
+        LIMIT #{size}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countReviews" resultType="long">
+        SELECT COUNT(*)
+        FROM review
+    </select>
+
+</mapper>
