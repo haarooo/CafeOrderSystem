@@ -1,6 +1,7 @@
 package com.example.cafeordersystem.review.service;
 
 import com.example.cafeordersystem.review.dto.ReviewCreateRequestDto;
+import com.example.cafeordersystem.review.dto.ReviewListItemDto;
 import com.example.cafeordersystem.review.dto.ReviewResponseDto;
 import com.example.cafeordersystem.review.dto.ReviewRow;
 import com.example.cafeordersystem.review.mapper.ReviewMapper;
@@ -59,6 +60,13 @@ public class ReviewService {
         return reviewMapper.countReviews();
     }
 
+    @Transactional(readOnly = true)
+    public List<ReviewListItemDto> getOwnerReviewList(int page) {
+        int safePage = Math.max(page, 0);
+        int offset = safePage * 10;
+        return reviewMapper.findOwnerReviewList(offset, 10);
+    }
+
     private void validateCreateReviewRequest(ReviewCreateRequestDto request) {
         if (request.getOrderId() == null) {
             throw new RuntimeException("주문 ID는 필수입니다.");
@@ -68,4 +76,6 @@ public class ReviewService {
             throw new RuntimeException("리뷰 내용은 필수입니다.");
         }
     }
+
+
 }

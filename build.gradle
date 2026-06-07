@@ -35,6 +35,10 @@ dependencies {
     // QR 코드 생성
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.zxing:javase:3.5.3'
+
+    // spring ai
+    implementation platform("org.springframework.ai:spring-ai-bom:1.0.8")
+    implementation "org.springframework.ai:spring-ai-starter-model-openai"
 }
 
 test {

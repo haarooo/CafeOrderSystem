@@ -17,7 +17,8 @@ public class ReviewReplyResponseDto {
     public static ReviewReplyResponseDto from(
             ReviewReplyQueryResultEvent event
     ) {
-        return ReviewReplyResponseDto.builder()
+        return
+                ReviewReplyResponseDto.builder()
                 .customerReviewId(event.getCustomerReviewId())
                 .orderId(event.getOrderId())
                 .hasReply(event.getHasReply())

@@ -38,9 +38,15 @@ public class OrderKafkaClient {
     public void complete(OrderCreateResultEvent resultEvent) {
         CompletableFuture<OrderCreateResultEvent> future =
                 pendingRequests.remove(resultEvent.getRequestId());
+        if (future == null) return;
 
-        if (future != null) {
+        if (Boolean.TRUE.equals(resultEvent.getSuccess())) {
             future.complete(resultEvent);
+        } else {
+            future.completeExceptionally(
+                    new RuntimeException(resultEvent.getMessage() != null
+                            ? resultEvent.getMessage()
+                            : "주문 처리에 실패했습니다."));
         }
     }
 

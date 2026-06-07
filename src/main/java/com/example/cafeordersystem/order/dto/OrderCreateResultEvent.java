@@ -15,4 +15,6 @@ public class OrderCreateResultEvent {
     private Long orderId;
     private Integer orderPrice;
     private String createdAt;
+    private Boolean success;
+    private String message;
 }

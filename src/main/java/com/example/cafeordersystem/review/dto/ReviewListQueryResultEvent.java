@@ -11,17 +11,12 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @Builder
-public class ReviewAnalysisResultEvent {
+public class ReviewListQueryResultEvent {
 
     private String requestId;
-
+    private List<ReviewListItemDto> reviews;
     private int page;
-
     private int size;
-
     private long totalCount;
-
-    private List<ReviewAnalysisItem> analyses;
-
     private String message;
 }

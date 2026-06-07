@@ -12,13 +12,10 @@ import lombok.NoArgsConstructor;
 public class ReviewAnalysisItem {
 
     private Long reviewId;
-    private Long orderId;
-    private String reviewContent;
-    private String createdAt;
 
     private String sentiment;
+
     private String summary;
-    private String positivePoints;
-    private String negativePoints;
-    private String recommendedAction;
+
+    private String operationInsight;
 }

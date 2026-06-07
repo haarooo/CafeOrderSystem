@@ -1,27 +1,14 @@
 package com.example.cafeordersystem.review.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Builder
-public class ReviewAnalysisResultEvent {
+public class ReviewListQueryRequestEvent {
 
     private String requestId;
-
     private int page;
-
-    private int size;
-
-    private long totalCount;
-
-    private List<ReviewAnalysisItem> analyses;
-
-    private String message;
 }

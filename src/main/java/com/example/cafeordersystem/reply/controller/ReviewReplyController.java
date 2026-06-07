@@ -15,9 +15,7 @@ public class ReviewReplyController {
     private final ReviewReplyService reviewReplyService;
 
     @GetMapping("/{reviewId}/reply")
-    public ResponseEntity<ReviewReplyResponseDto> getReply(
-            @PathVariable Long reviewId
-    ) {
+    public ResponseEntity<ReviewReplyResponseDto> getReply(@PathVariable Long reviewId) {
         return ResponseEntity.ok(
                 reviewReplyService.getReply(reviewId)
         );

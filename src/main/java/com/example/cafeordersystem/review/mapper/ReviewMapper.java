@@ -1,6 +1,7 @@
 package com.example.cafeordersystem.review.mapper;
 
 import com.example.cafeordersystem.review.dto.ReviewCreateRequestDto;
+import com.example.cafeordersystem.review.dto.ReviewListItemDto;
 import com.example.cafeordersystem.review.dto.ReviewRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -24,4 +25,9 @@ public interface ReviewMapper {
     );
 
     long countReviews();
+
+    List<ReviewListItemDto> findOwnerReviewList(
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
 }
