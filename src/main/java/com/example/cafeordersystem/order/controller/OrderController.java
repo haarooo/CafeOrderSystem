@@ -15,9 +15,14 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponseDto> createOrder(
+    public ResponseEntity<?> createOrder(
             @RequestBody OrderCreateRequestDto request
     ) {
-        return ResponseEntity.ok(orderService.createOrder(request));
+        try {
+            return ResponseEntity.ok(orderService.createOrder(request));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body("주문에 실패했습니다.");
+        }
     }
 }
