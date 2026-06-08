@@ -4,7 +4,6 @@ import com.example.cafeordersystem.global.outbox.OutboxService;
 import com.example.cafeordersystem.order.read.ReviewableOrderReadMapper;
 import com.example.cafeordersystem.review.dto.ReviewCreateRequestDto;
 import com.example.cafeordersystem.review.dto.ReviewCreatedPayload;
-import com.example.cafeordersystem.review.dto.ReviewListItemDto;
 import com.example.cafeordersystem.review.dto.ReviewResponseDto;
 import com.example.cafeordersystem.review.dto.ReviewRow;
 import com.example.cafeordersystem.review.mapper.ReviewMapper;
@@ -109,12 +108,7 @@ public class ReviewService {
         return reviewMapper.countReviews();
     }
 
-    @Transactional(readOnly = true)
-    public List<ReviewListItemDto> getOwnerReviewList(int page) {
-        int safePage = Math.max(page, 0);
-        int offset = safePage * 10;
-        return reviewMapper.findOwnerReviewList(offset, 10);
-    }
+
 
     private void validateCreateReviewRequest(ReviewCreateRequestDto request) {
         if (request.getOrderId() == null) {

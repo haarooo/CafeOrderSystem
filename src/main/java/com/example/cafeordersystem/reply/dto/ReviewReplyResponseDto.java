@@ -13,18 +13,4 @@ public class ReviewReplyResponseDto {
     private String replyContent;
     private String repliedAt;
     private String message;
-
-    public static ReviewReplyResponseDto from(
-            ReviewReplyQueryResultEvent event
-    ) {
-        return
-                ReviewReplyResponseDto.builder()
-                .customerReviewId(event.getCustomerReviewId())
-                .orderId(event.getOrderId())
-                .hasReply(event.getHasReply())
-                .replyContent(event.getReplyContent())
-                .repliedAt(event.getRepliedAt())
-                .message(event.getMessage())
-                .build();
-    }
 }

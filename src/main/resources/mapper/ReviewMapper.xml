@@ -70,17 +70,4 @@
         FROM review
     </select>
 
-    <select id="findOwnerReviewList"
-            resultType="com.example.cafeordersystem.review.dto.ReviewListItemDto">
-        SELECT
-        review_id AS reviewId,
-        order_id AS orderId,
-        review_content AS reviewContent,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt
-        FROM review
-        ORDER BY review_id DESC
-        LIMIT #{size}
-        OFFSET #{offset}
-    </select>
-
 </mapper>
