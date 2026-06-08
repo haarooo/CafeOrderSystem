@@ -1,8 +1,8 @@
 package com.example.cafeordersystem.menu.service;
 
 import com.example.cafeordersystem.menu.dto.MenuItemDto;
-import com.example.cafeordersystem.menu.dto.MenuListQueryResultEvent;
-import com.example.cafeordersystem.menu.kafka.MenuKafkaClient;
+import com.example.cafeordersystem.menu.read.MenuReadMapper;
+import com.example.cafeordersystem.menu.read.MenuReadRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,52 +10,39 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/*
- * React POS 화면에 내려줄 메뉴 목록을 준비하는 서비스.
- * 실제 메뉴 데이터는 Kafka로 사장 서버에 요청한다.
+/**
+ * React POS 화면에 내려줄 메뉴 목록을 조회하는 서비스.
+ *
+ * 최종 구조:
+ * - 사장 서버에 실시간으로 묻지 않는다.
+ * - 사장 서버 menu.created/updated/deleted 이벤트를 받아 갱신된
+ *   구매 서버 menu_read 테이블만 조회한다.
  */
 @Service
 @RequiredArgsConstructor
 public class MenuQueryService {
 
-    private final MenuKafkaClient menuKafkaClient;
+    private final MenuReadMapper menuReadMapper;
 
     public List<MenuItemDto> getMenus() {
-        MenuListQueryResultEvent result = menuKafkaClient.requestMenus();
-
-        if (result.getMenus() == null) {
-            return List.of();
-        }
-
-        return result.getMenus().stream()
-                .map(this::attachImageProxyUrl)
+        return menuReadMapper.findActiveMenus().stream()
+                .map(this::toMenuItemDto)
                 .toList();
     }
 
-    /**
-     * 사장 서버에서 받은 menuImage 경로를 구매 서버 프록시 이미지 URL로 변환한다.
-     *
-     * 사장 서버 원본:
-     * /uploads/images/abc.png
-     *
-     * React POS 사용:
-     * /api/menu-images?path=%2Fuploads%2Fimages%2Fabc.png
-     */
-    private MenuItemDto attachImageProxyUrl(MenuItemDto menu) {
-        String imagePath = menu.getMenuImage();
-
+    private MenuItemDto toMenuItemDto(MenuReadRow row) {
         String imageUrl = null;
 
-        if (imagePath != null && !imagePath.isBlank()) {
-            String encodedPath = URLEncoder.encode(imagePath, StandardCharsets.UTF_8);
+        if (row.getMenuImage() != null && !row.getMenuImage().isBlank()) {
+            String encodedPath = URLEncoder.encode(row.getMenuImage(), StandardCharsets.UTF_8);
             imageUrl = "/api/menu-images?path=" + encodedPath;
         }
 
         return MenuItemDto.builder()
-                .menuId(menu.getMenuId())
-                .menuName(menu.getMenuName())
-                .menuPrice(menu.getMenuPrice())
-                .menuImage(menu.getMenuImage())
+                .menuId(row.getMenuId())
+                .menuName(row.getMenuName())
+                .menuPrice(row.getMenuPrice())
+                .menuImage(row.getMenuImage())
                 .imageUrl(imageUrl)
                 .build();
     }

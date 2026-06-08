@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.cafeordersystem.menu.read.MenuReadMapper">
+
+    <select id="findActiveMenus"
+            resultType="com.example.cafeordersystem.menu.read.MenuReadRow">
+        SELECT
+        menu_id AS menuId,
+        menu_name AS menuName,
+        menu_price AS menuPrice,
+        menu_image AS menuImage,
+        menu_category AS menuCategory,
+        deleted,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM menu_read
+        WHERE deleted = FALSE
+        ORDER BY menu_id ASC
+    </select>
+
+    <insert id="upsertMenu"
+            parameterType="com.example.cafeordersystem.menu.read.MenuReadRow">
+        INSERT INTO menu_read (
+        menu_id,
+        menu_name,
+        menu_price,
+        menu_image,
+        menu_category,
+        deleted,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{menuId},
+        #{menuName},
+        #{menuPrice},
+        #{menuImage},
+        #{menuCategory},
+        FALSE,
+        NOW(6),
+        NOW(6)
+        )
+        ON DUPLICATE KEY UPDATE
+        menu_name = VALUES(menu_name),
+        menu_price = VALUES(menu_price),
+        menu_image = VALUES(menu_image),
+        menu_category = VALUES(menu_category),
+        deleted = FALSE,
+        updated_at = NOW(6)
+    </insert>
+
+    <update id="markDeleted">
+        UPDATE menu_read
+        SET deleted = TRUE,
+        updated_at = NOW(6)
+        WHERE menu_id = #{menuId}
+    </update>
+
+</mapper>

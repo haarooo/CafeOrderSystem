@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.cafeordersystem.global.outbox.OutboxMapper">
+
+    <insert id="insertOutboxEvent"
+            parameterType="com.example.cafeordersystem.global.outbox.OutboxEvent">
+        INSERT INTO outbox (
+        event_id,
+        aggregate_type,
+        aggregate_id,
+        event_type,
+        topic,
+        kafka_key,
+        payload,
+        status,
+        retry_count,
+        created_at
+        )
+        VALUES (
+        #{eventId},
+        #{aggregateType},
+        #{aggregateId},
+        #{eventType},
+        #{topic},
+        #{kafkaKey},
+        CAST(#{payload} AS JSON),
+        'NEW',
+        0,
+        NOW(6)
+        )
+    </insert>
+
+    <select id="findNewEvents"
+            resultType="com.example.cafeordersystem.global.outbox.OutboxEvent">
+        SELECT
+        id,
+        event_id AS eventId,
+        aggregate_type AS aggregateType,
+        aggregate_id AS aggregateId,
+        event_type AS eventType,
+        topic,
+        kafka_key AS kafkaKey,
+        JSON_UNQUOTE(JSON_EXTRACT(payload, '$')) AS payload,
+        status,
+        retry_count AS retryCount,
+        last_error AS lastError,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s.%f') AS createdAt,
+        DATE_FORMAT(sent_at, '%Y-%m-%d %H:%i:%s.%f') AS sentAt
+        FROM outbox
+        WHERE status = 'NEW'
+        ORDER BY id ASC
+        LIMIT #{limit}
+    </select>
+
+    <update id="markAsSent">
+        UPDATE outbox
+        SET status = 'SENT',
+        sent_at = NOW(6),
+        last_error = NULL
+        WHERE id = #{id}
+    </update>
+
+    <update id="markAsFailed">
+        UPDATE outbox
+        SET retry_count = retry_count + 1,
+        last_error = #{lastError}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
