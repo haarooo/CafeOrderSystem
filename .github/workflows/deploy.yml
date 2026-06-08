@@ -2,7 +2,7 @@ name: CafeOrderSystem Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   build-and-deploy:
