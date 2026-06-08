@@ -1,36 +1,81 @@
-import { useMemo, useState } from 'react';
-import { createOrder } from '../api/customerApi.js';
+import { useEffect, useMemo, useState } from 'react';
+import { createOrder, getMenus } from '../api/customerApi.js';
 import './TabletPOS.css';
-
-const categories = ['커피', '라떼', '에이드', '티', '디저트', '기타'];
-
-const menus = [
-  { menuId: 1, category: '커피', menuName: '아메리카노', price: 3000 },
-  { menuId: 2, category: '라떼', menuName: '카페라떼', price: 3800 },
-  { menuId: 3, category: '라떼', menuName: '바닐라라떼', price: 4300 },
-  { menuId: 4, category: '라떼', menuName: '카페모카', price: 4300 },
-  { menuId: 5, category: '커피', menuName: '아메모카', price: 4000 },
-  { menuId: 6, category: '라떼', menuName: '카라멜 마키아또', price: 4000 },
-  { menuId: 7, category: '라떼', menuName: '초코라떼', price: 4000 },
-  { menuId: 8, category: '에이드', menuName: '딸기 에이드', price: 4500 },
-  { menuId: 9, category: '커피', menuName: '콜드브루', price: 4500 },
-  { menuId: 10, category: '디저트', menuName: '버터 스콘', price: 3200 },
-  { menuId: 11, category: '티', menuName: '얼그레이 티', price: 3500 },
-  { menuId: 12, category: '기타', menuName: '생수', price: 1200 }
-];
 
 function money(value) {
   return `${Number(value || 0).toLocaleString()}원`;
 }
 
+// 구매 서버 /api/menus 응답을 POS 화면에서 쓰는 형태로 변환
+function normalizeMenu(menu) {
+  return {
+    menuId: menu.menuId,
+    menuName: menu.menuName,
+    price: menu.menuPrice,
+
+    // 구매 서버가 만들어준 이미지 프록시 URL을 우선 사용
+    imageUrl: menu.imageUrl || menu.menuImage,
+
+    // 현재 사장 서버에 카테고리가 없으면 전체로 묶는다.
+    category: menu.menuCategory || menu.category || '전체'
+  };
+}
+
 export default function TabletPOS() {
-  const [activeCategory, setActiveCategory] = useState('커피');
+  const [menus, setMenus] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('전체');
   const [cart, setCart] = useState([]);
   const [isPaying, setIsPaying] = useState(false);
+  const [isMenuLoading, setIsMenuLoading] = useState(true);
+  const [menuLoadError, setMenuLoadError] = useState(null);
+
+  useEffect(() => {
+    loadMenus();
+  }, []);
+
+  async function loadMenus() {
+    try {
+      setIsMenuLoading(true);
+      setMenuLoadError(null);
+
+      const data = await getMenus();
+
+      const normalizedMenus = Array.isArray(data)
+        ? data
+            .map(normalizeMenu)
+            .filter((menu) => menu.menuId && menu.menuName)
+        : [];
+
+      setMenus(normalizedMenus);
+
+      if (normalizedMenus.length > 0) {
+        setActiveCategory(normalizedMenus[0].category || '전체');
+      } else {
+        setActiveCategory('전체');
+      }
+    } catch (error) {
+      console.error('메뉴 목록 조회 실패:', error);
+      setMenuLoadError('메뉴를 불러오지 못했습니다. 구매 서버와 사장 서버 연결을 확인해주세요.');
+      setMenus([]);
+      setActiveCategory('전체');
+    } finally {
+      setIsMenuLoading(false);
+    }
+  }
+
+  const categories = useMemo(() => {
+    const uniqueCategories = menus
+      .map((menu) => menu.category || '전체')
+      .filter(Boolean);
+
+    const result = [...new Set(uniqueCategories)];
+
+    return result.length > 0 ? result : ['전체'];
+  }, [menus]);
 
   const filteredMenus = useMemo(
     () => menus.filter((menu) => menu.category === activeCategory),
-    [activeCategory]
+    [menus, activeCategory]
   );
 
   const total = useMemo(
@@ -46,11 +91,15 @@ export default function TabletPOS() {
   function addToCart(menu) {
     setCart((prev) => {
       const exists = prev.find((item) => item.menuId === menu.menuId);
+
       if (exists) {
         return prev.map((item) =>
-          item.menuId === menu.menuId ? { ...item, quantity: item.quantity + 1 } : item
+          item.menuId === menu.menuId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
       }
+
       return [...prev, { ...menu, quantity: 1 }];
     });
   }
@@ -66,9 +115,13 @@ export default function TabletPOS() {
   }
 
   function increase(menuId) {
-    setCart((prev) => prev.map((item) =>
-      item.menuId === menuId ? { ...item, quantity: item.quantity + 1 } : item
-    ));
+    setCart((prev) =>
+      prev.map((item) =>
+        item.menuId === menuId
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    );
   }
 
   async function handlePay() {
@@ -79,8 +132,13 @@ export default function TabletPOS() {
 
     try {
       setIsPaying(true);
+
+      // 주문 생성에는 menuId, quantity만 보낸다.
+      // 실제 가격 계산과 재고 차감은 사장 서버 DB 기준으로 처리된다.
       const items = cart.map(({ menuId, quantity }) => ({ menuId, quantity }));
       const order = await createOrder(items);
+
+      // 영수증 화면에서 보여줄 주문 상세는 현재 장바구니 기준으로 임시 저장
       const receipt = {
         ...order,
         orderDetails: cart.map((item) => ({
@@ -94,6 +152,7 @@ export default function TabletPOS() {
 
       sessionStorage.setItem(`receipt:${order.orderId}`, JSON.stringify(receipt));
       setCart([]);
+
       window.open(
         `/receipt?orderId=${order.orderId}`,
         `receipt_${order.orderId}`,
@@ -113,11 +172,14 @@ export default function TabletPOS() {
           <div>
             <p className="eyebrow">CafeOS · Tablet Order</p>
             <h1>주문을 받아볼까요?</h1>
-            <span>카테고리를 고르고 메뉴를 터치하면 우측 장바구니에 담깁니다.</span>
+            <span>사장 서버에 등록된 메뉴를 불러와 주문 화면에 표시합니다.</span>
           </div>
+
           <div className="today-order-card">
             <span>오늘 주문</span>
-            <strong>142<small>건</small></strong>
+            <strong>
+              142<small>건</small>
+            </strong>
           </div>
         </header>
 
@@ -140,28 +202,56 @@ export default function TabletPOS() {
                 <strong>{activeCategory}</strong>
                 <span>{filteredMenus.length}개 메뉴</span>
               </div>
-              <em>터치 주문</em>
+              <em>{isMenuLoading ? '메뉴 불러오는 중' : '터치 주문'}</em>
             </div>
 
+            {menuLoadError && (
+              <div className="empty-cart" style={{ marginBottom: '16px' }}>
+                {menuLoadError}
+              </div>
+            )}
+
             <div className="tablet-product-grid">
-              {filteredMenus.map((menu) => (
-                <button
-                  key={menu.menuId}
-                  className="tablet-product-card"
-                  onClick={() => addToCart(menu)}
-                >
-                  <div className="p-thumb"><span>☕</span></div>
-                  <strong>{menu.menuName}</strong>
-                  <span>{money(menu.price)}</span>
-                </button>
-              ))}
+              {isMenuLoading ? (
+                <div className="empty-cart">메뉴를 불러오는 중입니다.</div>
+              ) : filteredMenus.length === 0 ? (
+                <div className="empty-cart">등록된 메뉴가 없습니다.</div>
+              ) : (
+                filteredMenus.map((menu) => (
+                  <button
+                    key={menu.menuId}
+                    className="tablet-product-card"
+                    onClick={() => addToCart(menu)}
+                  >
+                    <div className="p-thumb">
+                      {menu.imageUrl ? (
+                        <img
+                          src={menu.imageUrl}
+                          alt={menu.menuName}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            borderRadius: '18px'
+                          }}
+                        />
+                      ) : (
+                        <span>☕</span>
+                      )}
+                    </div>
+
+                    <strong>{menu.menuName}</strong>
+                    <span>{money(menu.price)}</span>
+                  </button>
+                ))
+              )}
             </div>
           </section>
 
           <aside className="tablet-cart">
             <div className="cart-head">
               <div>
-                <h2>주문 내역</h2>
+                <h2>장바구니</h2>
                 <p>테이블 5번 · {totalQuantity}개 담김</p>
               </div>
               <button onClick={() => setCart([])}>초기화</button>
@@ -175,13 +265,17 @@ export default function TabletPOS() {
                   <div className="tablet-cart-item" key={item.menuId}>
                     <div>
                       <strong>{item.menuName}</strong>
-                      <span>{money(item.price)} · {item.quantity}잔</span>
+                      <span>
+                        {money(item.price)} · {item.quantity}잔
+                      </span>
                     </div>
+
                     <div className="qty-box">
                       <button onClick={() => decrease(item.menuId)}>-</button>
                       <em>{item.quantity}</em>
                       <button onClick={() => increase(item.menuId)}>+</button>
                     </div>
+
                     <b>{money(item.price * item.quantity)}</b>
                   </div>
                 ))
@@ -193,6 +287,7 @@ export default function TabletPOS() {
                 <span>총 금액</span>
                 <strong>{money(total)}</strong>
               </div>
+
               <button className="pay-btn" disabled={isPaying} onClick={handlePay}>
                 {isPaying ? '처리 중...' : '결제하기'}
               </button>

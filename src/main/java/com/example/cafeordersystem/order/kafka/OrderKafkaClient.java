@@ -22,16 +22,16 @@ public class OrderKafkaClient {
             new ConcurrentHashMap<>();
 
     public OrderCreateResultEvent requestOrderCreate(OrderCreateRequestEvent event) {
+        CompletableFuture<OrderCreateResultEvent> future = new CompletableFuture<>();
+        pendingRequests.put(event.getRequestId(), future);
+
         try {
-            CompletableFuture<OrderCreateResultEvent> future = new CompletableFuture<>();
-            pendingRequests.put(event.getRequestId(), future);
-
             orderCreateRequestProducer.send(event);
-
             return future.get(15, TimeUnit.SECONDS);
-
         } catch (Exception e) {
             throw new RuntimeException("주문 생성 결과 수신 실패", e);
+        } finally {
+            pendingRequests.remove(event.getRequestId());
         }
     }
 
