@@ -6,6 +6,18 @@ function money(value) {
   return `${Number(value || 0).toLocaleString()}원`;
 }
 
+function normalizeImageUrl(value) {
+  if (!value) return null;
+
+  // 이미 절대 URL이면 그대로 사용
+  if (String(value).startsWith('http://') || String(value).startsWith('https://')) {
+    return value;
+  }
+
+  // Spring Boot 같은 도메인 기준 상대경로
+  return value;
+}
+
 // 구매 서버 /api/menus 응답을 POS 화면에서 쓰는 형태로 변환
 function normalizeMenu(menu) {
   return {
@@ -14,9 +26,9 @@ function normalizeMenu(menu) {
     price: menu.menuPrice,
 
     // 구매 서버가 만들어준 이미지 프록시 URL을 우선 사용
-    imageUrl: menu.imageUrl || menu.menuImage,
+    imageUrl: normalizeImageUrl(menu.imageUrl || menu.menuImage),
 
-    // 현재 사장 서버에 카테고리가 없으면 전체로 묶는다.
+    // 구매 서버에 카테고리가 없으면 전체로 묶는다.
     category: menu.menuCategory || menu.category || '전체'
   };
 }
@@ -134,9 +146,12 @@ export default function TabletPOS() {
       setIsPaying(true);
 
       // 주문 생성에는 menuId, quantity만 보낸다.
-      // 실제 가격 계산과 재고 차감은 사장 서버 DB 기준으로 처리된다.
       const items = cart.map(({ menuId, quantity }) => ({ menuId, quantity }));
       const order = await createOrder(items);
+
+      if (!order?.orderId) {
+        throw new Error('주문번호가 응답에 없습니다.');
+      }
 
       // 영수증 화면에서 보여줄 주문 상세는 현재 장바구니 기준으로 임시 저장
       const receipt = {
@@ -159,6 +174,7 @@ export default function TabletPOS() {
         'width=520,height=780,scrollbars=yes,resizable=yes'
       );
     } catch (error) {
+      console.error('결제 처리 실패:', error);
       alert(`결제 처리 중 오류가 발생했습니다.\n${error.message}`);
     } finally {
       setIsPaying(false);
@@ -178,7 +194,7 @@ export default function TabletPOS() {
           <div className="today-order-card">
             <span>오늘 주문</span>
             <strong>
-              142<small>건</small>
+              {cart.length}<small>건</small>
             </strong>
           </div>
         </header>

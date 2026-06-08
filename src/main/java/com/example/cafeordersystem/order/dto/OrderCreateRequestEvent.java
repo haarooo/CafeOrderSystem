@@ -15,4 +15,5 @@ public class OrderCreateRequestEvent {
 
     private String requestId;
     private List<OrderItemRequestDto> items;
+
 }

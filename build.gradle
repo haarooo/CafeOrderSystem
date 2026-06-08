@@ -2,6 +2,9 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.6'
     id 'io.spring.dependency-management' version '1.1.7'
+
+    // React 빌드를 Gradle에서 자동 실행하기 위한 Node 플러그인
+    id 'com.github.node-gradle.node' version '7.0.1'
 }
 
 group = 'org.example'
@@ -18,29 +21,126 @@ repositories {
 }
 
 dependencies {
+    // Spring MVC / REST API
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // MySQL
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
+    // MyBatis
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
 
+    // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
 
     // QR 코드 생성
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.zxing:javase:3.5.3'
 
-    // spring ai
+    // Spring AI
     implementation platform("org.springframework.ai:spring-ai-bom:1.0.8")
     implementation "org.springframework.ai:spring-ai-starter-model-openai"
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
     useJUnitPlatform()
+}
+
+/*
+ * React + Spring Boot 통합 배포 설정
+ *
+ * 현재 실제 React 위치:
+ * src/main/cafeorderfront/cafeorderfront
+ *
+ * ./gradlew clean bootJar 실행 시:
+ * 1. React 폴더에서 npm install
+ * 2. npm run build
+ * 3. dist 결과물을 Spring Boot static 리소스로 포함
+ * 4. jar 하나에 Spring Boot API + React 화면 같이 포함
+ */
+
+def reactDir = file("${project.projectDir}/src/main/cafeorderfront/cafeorderfront")
+
+node {
+    // Vite 8 / Rolldown이 Node 20.19+ 또는 22.12+를 요구하므로 22.13.1 사용
+    version = '22.13.1'
+    npmVersion = '10.9.2'
+    download = true
+
+    // 실제 React 프로젝트 위치
+    nodeProjectDir = reactDir
+}
+
+// 1. React 의존성 설치
+tasks.register('npmInstallReact', com.github.gradle.node.npm.task.NpmTask) {
+    description = "Install React dependencies"
+    group = "frontend"
+
+    workingDir = reactDir
+    args = ['install']
+
+    inputs.file("${reactDir}/package.json")
+
+    if (file("${reactDir}/package-lock.json").exists()) {
+        inputs.file("${reactDir}/package-lock.json")
+    }
+
+    outputs.dir("${reactDir}/node_modules")
+}
+
+// 2. React 빌드
+tasks.register('npmBuildReact', com.github.gradle.node.npm.task.NpmTask) {
+    description = "Build React app"
+    group = "frontend"
+
+    dependsOn 'npmInstallReact'
+
+    workingDir = reactDir
+    args = ['run', 'build']
+
+    inputs.file("${reactDir}/package.json")
+
+    if (file("${reactDir}/src").exists()) {
+        inputs.dir("${reactDir}/src")
+    }
+
+    if (file("${reactDir}/public").exists()) {
+        inputs.dir("${reactDir}/public")
+    }
+
+    if (file("${reactDir}/index.html").exists()) {
+        inputs.file("${reactDir}/index.html")
+    }
+
+    if (file("${reactDir}/vite.config.js").exists()) {
+        inputs.file("${reactDir}/vite.config.js")
+    }
+
+    // Vite 기준 빌드 결과물
+    outputs.dir("${reactDir}/dist")
+}
+
+// 3. Spring Boot jar 안에 React dist 포함
+tasks.named('processResources') {
+    dependsOn 'npmBuildReact'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from("${reactDir}/dist") {
+        into 'static'
+    }
+}
+
+// 4. clean 시 dist만 삭제
+// node_modules는 Windows에서 .node 파일 잠금 문제가 자주 생겨서 삭제하지 않음
+tasks.named('clean') {
+    delete file("${reactDir}/dist")
 }
