@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MenuResponseDto {
+public class MenuItemDto {
 
     private Long menuId;
     private String menuName;

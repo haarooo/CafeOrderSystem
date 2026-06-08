@@ -1,55 +1,47 @@
 package com.example.cafeordersystem.menu.service;
 
-import com.example.cafeordersystem.menu.dto.MenuResponseDto;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
+import com.example.cafeordersystem.menu.dto.MenuItemDto;
+import com.example.cafeordersystem.menu.dto.MenuListQueryResultEvent;
+import com.example.cafeordersystem.menu.kafka.MenuKafkaClient;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/**
- * 구매 서버가 사장 서버의 메뉴 API를 호출하는 서비스.
- *
- * React POS는 구매 서버만 바라보고,
- * 구매 서버가 내부적으로 사장 서버 /api/menu를 호출한다.
+/*
+ * React POS 화면에 내려줄 메뉴 목록을 준비하는 서비스.
+ * 실제 메뉴 데이터는 Kafka로 사장 서버에 요청한다.
  */
 @Service
+@RequiredArgsConstructor
 public class MenuQueryService {
 
-    private final RestClient restClient;
+    private final MenuKafkaClient menuKafkaClient;
 
-    public MenuQueryService(
-            @Value("${owner.server.base-url}") String ownerServerBaseUrl
-    ) {
-        this.restClient = RestClient.builder()
-                .baseUrl(ownerServerBaseUrl)
-                .build();
-    }
+    public List<MenuItemDto> getMenus() {
+        MenuListQueryResultEvent result = menuKafkaClient.requestMenus();
 
-    public List<MenuResponseDto> getMenus() {
-        try {
-            List<MenuResponseDto> ownerMenus = restClient.get()
-                    .uri("/api/menu")
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<MenuResponseDto>>() {});
-
-            if (ownerMenus == null) {
-                return List.of();
-            }
-
-            return ownerMenus.stream()
-                    .map(this::attachImageProxyUrl)
-                    .toList();
-
-        } catch (Exception e) {
-            throw new RuntimeException("사장 서버 메뉴 목록 조회 실패", e);
+        if (result.getMenus() == null) {
+            return List.of();
         }
+
+        return result.getMenus().stream()
+                .map(this::attachImageProxyUrl)
+                .toList();
     }
 
-    private MenuResponseDto attachImageProxyUrl(MenuResponseDto menu) {
+    /**
+     * 사장 서버에서 받은 menuImage 경로를 구매 서버 프록시 이미지 URL로 변환한다.
+     *
+     * 사장 서버 원본:
+     * /uploads/images/abc.png
+     *
+     * React POS 사용:
+     * /api/menu-images?path=%2Fuploads%2Fimages%2Fabc.png
+     */
+    private MenuItemDto attachImageProxyUrl(MenuItemDto menu) {
         String imagePath = menu.getMenuImage();
 
         String imageUrl = null;
@@ -59,7 +51,7 @@ public class MenuQueryService {
             imageUrl = "/api/menu-images?path=" + encodedPath;
         }
 
-        return MenuResponseDto.builder()
+        return MenuItemDto.builder()
                 .menuId(menu.getMenuId())
                 .menuName(menu.getMenuName())
                 .menuPrice(menu.getMenuPrice())

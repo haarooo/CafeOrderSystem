@@ -56,22 +56,18 @@ public class MenuImageProxyController {
             return false;
         }
 
-        // 사장 서버 uploads 폴더 아래 파일만 허용
         if (!path.startsWith("/uploads/")) {
             return false;
         }
 
-        // 경로 조작 방지
         if (path.contains("..")) {
             return false;
         }
 
-        // 윈도우 역슬래시 경로 조작 방지
         if (path.contains("\\")) {
             return false;
         }
 
-        // 외부 URL 직접 호출 방지
         if (path.startsWith("http://") || path.startsWith("https://")) {
             return false;
         }
