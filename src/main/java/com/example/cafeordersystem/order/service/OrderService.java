@@ -9,6 +9,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * 구매 서버 주문 서비스.
+ *
+ * 주문 자체는 Kafka request/reply로 사장 서버에 요청한다.
+ * 사장 서버는 주문 저장 후 orderId/orderPrice만 반환한다.
+ *
+ * QR 생성은 구매 서버가 담당한다.
+ * 단, QR 이미지는 저장하지 않고 Base64 data URL로 프론트에 바로 내려준다.
+ */
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -16,6 +25,15 @@ public class OrderService {
     private final OrderKafkaClient orderKafkaClient;
     private final QrCodeService qrCodeService;
 
+    /**
+     * QR 안에 들어갈 리뷰 작성 페이지 주소.
+     *
+     * 로컬:
+     * http://localhost:5173/review/write
+     *
+     * 배포:
+     * https://구매서버도메인/review/write
+     */
     @Value("${app.frontend.review-base-url}")
     private String reviewBaseUrl;
 
@@ -31,11 +49,19 @@ public class OrderService {
 
         OrderCreateResultEvent result = orderKafkaClient.requestOrderCreate(event);
 
-        // 핵심: QR에 들어갈 주소는 백엔드가 아니라 React 프론트 주소
+        /*
+         * QR을 찍었을 때 이동할 구매 프론트 리뷰 작성 URL.
+         */
         String reviewPageUrl = createReviewPageUrl(result.getOrderId());
 
-        // QR 이미지는 구매 서버 uploads/qrcodes에 저장
-        String qrUrl = qrCodeService.createQrImage(result.getOrderId(), reviewPageUrl);
+        /*
+         * QR 이미지는 저장하지 않고 Base64 data URL로 생성한다.
+         * 프론트에서는 <img src={qrUrl}> 로 바로 표시된다.
+         */
+        String qrUrl = qrCodeService.createQrImage(
+                result.getOrderId(),
+                reviewPageUrl
+        );
 
         return OrderResponseDto.builder()
                 .orderId(result.getOrderId())
@@ -47,7 +73,7 @@ public class OrderService {
     }
 
     private String createReviewPageUrl(Long orderId) {
-        return reviewBaseUrl + "?orderId=" + orderId;
+        return reviewBaseUrl.replaceAll("/+$", "") + "?orderId=" + orderId;
     }
 
     private void validateRequest(OrderCreateRequestDto request) {

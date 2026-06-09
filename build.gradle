@@ -33,6 +33,7 @@ dependencies {
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
 
+
     // QR 코드 생성
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'com.google.zxing:javase:3.5.3'
