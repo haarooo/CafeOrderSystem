@@ -16,14 +16,16 @@
         INSERT INTO review (
         order_id,
         review_content,
+        analysis_status,
         created_at,
         updated_at
         )
         VALUES (
         #{orderId},
         #{reviewContent},
-        NOW(),
-        NOW()
+        'PENDING',
+        NOW(6),
+        NOW(6)
         )
     </insert>
 
@@ -33,6 +35,9 @@
         review_id AS reviewId,
         order_id AS orderId,
         review_content AS reviewContent,
+        analysis_status AS analysisStatus,
+        analysis_result_json AS analysisResultJson,
+        DATE_FORMAT(analyzed_at, '%Y-%m-%d %H:%i:%s') AS analyzedAt,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
         DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
         FROM review
@@ -45,6 +50,9 @@
         review_id AS reviewId,
         order_id AS orderId,
         review_content AS reviewContent,
+        analysis_status AS analysisStatus,
+        analysis_result_json AS analysisResultJson,
+        DATE_FORMAT(analyzed_at, '%Y-%m-%d %H:%i:%s') AS analyzedAt,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
         DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
         FROM review
@@ -57,6 +65,9 @@
         review_id AS reviewId,
         order_id AS orderId,
         review_content AS reviewContent,
+        analysis_status AS analysisStatus,
+        analysis_result_json AS analysisResultJson,
+        DATE_FORMAT(analyzed_at, '%Y-%m-%d %H:%i:%s') AS analyzedAt,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
         DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
         FROM review
@@ -69,5 +80,65 @@
         SELECT COUNT(*)
         FROM review
     </select>
+
+    <!--
+        분석 대상 조회:
+        1. PENDING은 즉시 분석 대상
+        2. FAILED는 updated_at 기준 10분 이상 지난 것만 재시도 대상
+
+        failedRetryDeadline은 Service에서 now - 10분으로 넘긴다.
+    -->
+    <select id="findAnalysisTargets"
+            resultType="com.example.cafeordersystem.review.dto.ReviewRow">
+        SELECT
+        review_id AS reviewId,
+        order_id AS orderId,
+        review_content AS reviewContent,
+        analysis_status AS analysisStatus,
+        analysis_result_json AS analysisResultJson,
+        DATE_FORMAT(analyzed_at, '%Y-%m-%d %H:%i:%s') AS analyzedAt,
+        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
+        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        FROM review
+        WHERE analysis_status = 'PENDING'
+        OR (
+        analysis_status = 'FAILED'
+        AND updated_at &lt; #{failedRetryDeadline}
+        )
+        ORDER BY review_id ASC
+        LIMIT #{limit}
+    </select>
+
+    <update id="markAnalysisProcessing">
+        UPDATE review
+        SET analysis_status = 'PROCESSING',
+        updated_at = NOW(6)
+        WHERE review_id = #{reviewId}
+    </update>
+
+    <update id="markAnalysisCompleted">
+        UPDATE review
+        SET analysis_status = 'COMPLETED',
+        analysis_result_json = #{analysisResultJson},
+        analyzed_at = NOW(6),
+        updated_at = NOW(6)
+        WHERE review_id = #{reviewId}
+    </update>
+
+    <update id="markAnalysisFailed">
+        UPDATE review
+        SET analysis_status = 'FAILED',
+        updated_at = NOW(6)
+        WHERE review_id = #{reviewId}
+    </update>
+
+
+    <update id="resetStaleProcessing">
+        UPDATE review
+        SET analysis_status = 'PENDING',
+        updated_at = NOW(6)
+        WHERE analysis_status = 'PROCESSING'
+        AND updated_at &lt; #{processingTimeoutDeadline}
+    </update>
 
 </mapper>

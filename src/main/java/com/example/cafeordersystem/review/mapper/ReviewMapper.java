@@ -5,6 +5,7 @@ import com.example.cafeordersystem.review.dto.ReviewRow;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -24,4 +25,22 @@ public interface ReviewMapper {
     );
 
     long countReviews();
+
+    List<ReviewRow> findAnalysisTargets(
+            @Param("failedRetryDeadline") LocalDateTime failedRetryDeadline,
+            @Param("limit") int limit
+    );
+
+    void markAnalysisProcessing(@Param("reviewId") Long reviewId);
+
+    void markAnalysisCompleted(
+            @Param("reviewId") Long reviewId,
+            @Param("analysisResultJson") String analysisResultJson
+    );
+
+    void markAnalysisFailed(@Param("reviewId") Long reviewId);
+
+    int resetStaleProcessing(
+            @Param("processingTimeoutDeadline") LocalDateTime processingTimeoutDeadline
+    );
 }
