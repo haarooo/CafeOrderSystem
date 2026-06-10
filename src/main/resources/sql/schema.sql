@@ -6,7 +6,9 @@ CREATE TABLE review (
                         order_id BIGINT NOT NULL,
 
                         review_content TEXT NOT NULL,
-
+                        analysis_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                        analysis_result_json LONGTEXT NULL,
+                        analyzed_at DATETIME(6) NULL,
                         created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                         updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
 
