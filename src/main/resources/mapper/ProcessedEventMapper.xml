@@ -14,7 +14,7 @@
         VALUES (
         #{eventId},
         #{eventType},
-        NOW(6)
+        CURRENT_TIMESTAMP
         )
     </insert>
 

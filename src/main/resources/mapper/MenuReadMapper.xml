@@ -13,8 +13,8 @@
         menu_price AS menuPrice,
         menu_image AS menuImage,
         deleted,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS createdAt,
-        DATE_FORMAT(updated_at, '%Y-%m-%d %H:%i:%s') AS updatedAt
+        to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') AS createdAt,
+        to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') AS updatedAt
         FROM menu_read
         WHERE deleted = FALSE
         ORDER BY menu_id ASC
@@ -37,21 +37,22 @@
         #{menuPrice},
         #{menuImage},
         FALSE,
-        NOW(6),
-        NOW(6)
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
         )
-        ON DUPLICATE KEY UPDATE
-        menu_name = VALUES(menu_name),
-        menu_price = VALUES(menu_price),
-        menu_image = VALUES(menu_image),
+        ON CONFLICT (menu_id) DO UPDATE SET
+        menu_name = EXCLUDED.menu_name,
+        menu_price = EXCLUDED.menu_price,
+        menu_image = EXCLUDED.menu_image,
         deleted = FALSE,
-        updated_at = NOW(6)
+        updated_at = CURRENT_TIMESTAMP
     </insert>
 
     <update id="markDeleted">
         UPDATE menu_read
-        SET deleted = TRUE,
-        updated_at = NOW(6)
+        SET
+        deleted = TRUE,
+        updated_at = CURRENT_TIMESTAMP
         WHERE menu_id = #{menuId}
     </update>
 

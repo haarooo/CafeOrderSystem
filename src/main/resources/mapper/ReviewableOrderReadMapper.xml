@@ -22,12 +22,12 @@
         VALUES (
         #{orderId},
         #{orderPrice},
-        NOW(6),
+        CURRENT_TIMESTAMP,
         FALSE
         )
-        ON DUPLICATE KEY UPDATE
-        order_price = VALUES(order_price),
-        created_at = VALUES(created_at)
+        ON CONFLICT (order_id) DO UPDATE SET
+        order_price = EXCLUDED.order_price,
+        created_at = EXCLUDED.created_at
     </insert>
 
     <update id="markReviewWritten">

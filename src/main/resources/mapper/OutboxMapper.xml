@@ -26,10 +26,10 @@
         #{eventType},
         #{topic},
         #{kafkaKey},
-        CAST(#{payload} AS JSON),
+        CAST(#{payload} AS jsonb),
         'NEW',
         0,
-        NOW(6)
+        CURRENT_TIMESTAMP
         )
     </insert>
 
@@ -43,12 +43,12 @@
         event_type AS eventType,
         topic,
         kafka_key AS kafkaKey,
-        JSON_UNQUOTE(JSON_EXTRACT(payload, '$')) AS payload,
+        payload::text AS payload,
         status,
         retry_count AS retryCount,
         last_error AS lastError,
-        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s.%f') AS createdAt,
-        DATE_FORMAT(sent_at, '%Y-%m-%d %H:%i:%s.%f') AS sentAt
+        to_char(created_at, 'YYYY-MM-DD HH24:MI:SS.US') AS createdAt,
+        to_char(sent_at, 'YYYY-MM-DD HH24:MI:SS.US') AS sentAt
         FROM outbox
         WHERE status = 'NEW'
         ORDER BY id ASC
@@ -57,15 +57,17 @@
 
     <update id="markAsSent">
         UPDATE outbox
-        SET status = 'SENT',
-        sent_at = NOW(6),
+        SET
+        status = 'SENT',
+        sent_at = CURRENT_TIMESTAMP,
         last_error = NULL
         WHERE id = #{id}
     </update>
 
     <update id="markAsFailed">
         UPDATE outbox
-        SET retry_count = retry_count + 1,
+        SET
+        retry_count = retry_count + 1,
         last_error = #{lastError}
         WHERE id = #{id}
     </update>
