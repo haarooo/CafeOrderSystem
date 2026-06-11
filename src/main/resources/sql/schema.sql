@@ -15,6 +15,8 @@ CREATE TABLE review (
                         UNIQUE KEY uk_review_order_id (order_id)
 );
 
+
+
 DROP TABLE IF EXISTS outbox;
 
 CREATE TABLE IF NOT EXISTS outbox (
@@ -58,6 +60,21 @@ CREATE TABLE IF NOT EXISTS menu_read (
     created_at DATETIME(6) NULL,
     updated_at DATETIME(6) NULL
     );
+
+
+
+INSERT INTO menu_read
+(menu_id, menu_name, menu_price, menu_image, menu_category, deleted, created_at, updated_at)
+VALUES
+    (1, '아메리카노',      3000, '/images/menu/americano.jpg',        'COFFEE', false, NOW(6), NOW(6)),
+    (2, '카페라떼',        3800, '/images/menu/cafe_latte.jpg',       'COFFEE', false, NOW(6), NOW(6)),
+    (3, '바닐라라떼',      4300, '/images/menu/vanilla_latte.jpg',    'COFFEE', false, NOW(6), NOW(6)),
+    (4, '카페모카',        4300, '/images/menu/cafe_mocha.jpg',       'COFFEE', false, NOW(6), NOW(6)),
+    (5, '아메모카',        4000, '/images/menu/ame_mocha.jpg',        'COFFEE', false, NOW(6), NOW(6)),
+    (6, '카라멜 마키아또', 4000, '/images/menu/caramel_macchiato.jpg','COFFEE', false, NOW(6), NOW(6)),
+    (7, '초코라떼',        4000, '/images/menu/choco_latte.jpg',      'LATTE',  false, NOW(6), NOW(6)),
+    (8, '딸기 에이드',     4500, '/images/menu/strawberry_ade.jpg',   'ADE',    false, NOW(6), NOW(6)),
+    (9, '콜드브루',        4500, '/images/menu/cold_brew.jpg',        'COFFEE', false, NOW(6), NOW(6));
 
 DROP TABLE IF EXISTS reply_read;
 CREATE TABLE IF NOT EXISTS reply_read (
