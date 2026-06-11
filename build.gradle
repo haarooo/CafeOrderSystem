@@ -24,8 +24,8 @@ dependencies {
     // Spring MVC / REST API
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // MySQL
-    runtimeOnly 'com.mysql:mysql-connector-j'
+    // PostgreSQL
+    runtimeOnly 'org.postgresql:postgresql'
 
     // MyBatis
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
