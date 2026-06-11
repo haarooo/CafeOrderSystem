@@ -43,4 +43,16 @@ public interface ReviewMapper {
     int resetStaleProcessing(
             @Param("processingTimeoutDeadline") LocalDateTime processingTimeoutDeadline
     );
+
+    int updateReply(
+            @Param("reviewId") Long reviewId,
+            @Param("replyContent") String replyContent
+    );
+
+    int updateReplyContent(
+            @Param("reviewId") Long reviewId,
+            @Param("replyContent") String replyContent
+    );
+
+    int deleteReply(@Param("reviewId") Long reviewId);
 }

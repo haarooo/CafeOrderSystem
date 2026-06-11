@@ -1,8 +1,8 @@
 package com.example.cafeordersystem.reply.service;
 
 import com.example.cafeordersystem.reply.dto.ReviewReplyResponseDto;
-import com.example.cafeordersystem.reply.read.ReplyReadMapper;
-import com.example.cafeordersystem.reply.read.ReplyReadRow;
+import com.example.cafeordersystem.review.dto.ReviewRow;
+import com.example.cafeordersystem.review.mapper.ReviewMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,40 +10,49 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 고객 화면에서 사장 답글을 조회하는 서비스.
  *
- * 최종 구조:
- * - 사장 서버에 Kafka request/reply로 묻지 않는다.
- * - 사장 서버 reply.created/updated/deleted 이벤트로 미리 동기화된
- *   구매 서버 reply_read 테이블만 조회한다.
+ * 변경된 구조:
+ * - reply_read 테이블을 조회하지 않는다.
+ * - 구매 서버 review 테이블이 리뷰 + 분석결과 + 답글 원장이다.
+ * - 고객 화면은 review.reply_content / reply_status를 기준으로 답글을 조회한다.
  */
 @Service
 @RequiredArgsConstructor
 public class ReviewReplyService {
 
-    private final ReplyReadMapper replyReadMapper;
+    private final ReviewMapper reviewMapper;
 
     @Transactional(readOnly = true)
-    public ReviewReplyResponseDto getReply(Long customerReviewId) {
-        if (customerReviewId == null) {
-            throw new RuntimeException("고객 리뷰 ID는 필수입니다.");
+    public ReviewReplyResponseDto getReply(Long reviewId) {
+        if (reviewId == null) {
+            throw new RuntimeException("리뷰 ID는 필수입니다.");
         }
 
-        ReplyReadRow row = replyReadMapper.findByCustomerReviewId(customerReviewId);
+        ReviewRow review = reviewMapper.findByReviewId(reviewId);
 
-        if (row == null || !Boolean.TRUE.equals(row.getHasReply())) {
+        if (review == null) {
+            throw new RuntimeException("리뷰를 찾을 수 없습니다. reviewId=" + reviewId);
+        }
+
+        if (!"ACTIVE".equals(review.getReplyStatus()) || isBlank(review.getReplyContent())) {
             return ReviewReplyResponseDto.builder()
-                    .customerReviewId(customerReviewId)
+                    .customerReviewId(reviewId)
+                    .orderId(review.getOrderId())
                     .hasReply(false)
                     .message("아직 등록된 답글이 없습니다.")
                     .build();
         }
 
         return ReviewReplyResponseDto.builder()
-                .customerReviewId(row.getCustomerReviewId())
-                .orderId(row.getOrderId())
+                .customerReviewId(review.getReviewId())
+                .orderId(review.getOrderId())
                 .hasReply(true)
-                .replyContent(row.getReplyContent())
-                .repliedAt(row.getRepliedAt())
+                .replyContent(review.getReplyContent())
+                .repliedAt(review.getRepliedAt())
                 .message("답글 조회 성공")
                 .build();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
