@@ -56,4 +56,12 @@
         WHERE menu_id = #{menuId}
     </update>
 
+    <update id="markAllDeleted">
+        UPDATE menu_read
+        SET
+        deleted = TRUE,
+        updated_at = CURRENT_TIMESTAMP
+        WHERE deleted = FALSE
+    </update>
+
 </mapper>
