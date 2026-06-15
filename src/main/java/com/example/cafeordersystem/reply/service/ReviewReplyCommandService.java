@@ -1,11 +1,11 @@
-package com.example.cafeordersystem.review.reply.service;
+package com.example.cafeordersystem.reply.service;
 
 import com.example.cafeordersystem.global.outbox.OutboxService;
 import com.example.cafeordersystem.review.dto.ReviewRow;
 import com.example.cafeordersystem.review.mapper.ReviewMapper;
-import com.example.cafeordersystem.review.reply.dto.ReviewRepliedPayload;
-import com.example.cafeordersystem.review.reply.dto.ReviewReplyCommandRequestEvent;
-import com.example.cafeordersystem.review.reply.dto.ReviewReplyCommandResultEvent;
+import com.example.cafeordersystem.reply.dto.ReviewRepliedPayload;
+import com.example.cafeordersystem.reply.dto.ReviewReplyCommandRequestEvent;
+import com.example.cafeordersystem.reply.dto.ReviewReplyCommandResultEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

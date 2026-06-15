@@ -1,6 +1,6 @@
 package com.example.cafeordersystem.reply.kafka;
 
-import com.example.cafeordersystem.review.reply.dto.ReviewReplyCommandResultEvent;
+import com.example.cafeordersystem.reply.dto.ReviewReplyCommandResultEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;

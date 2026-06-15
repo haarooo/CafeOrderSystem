@@ -1,8 +1,8 @@
 package com.example.cafeordersystem.reply.kafka;
 
-import com.example.cafeordersystem.review.reply.dto.ReviewReplyCommandRequestEvent;
-import com.example.cafeordersystem.review.reply.dto.ReviewReplyCommandResultEvent;
-import com.example.cafeordersystem.review.reply.service.ReviewReplyCommandService;
+import com.example.cafeordersystem.reply.dto.ReviewReplyCommandRequestEvent;
+import com.example.cafeordersystem.reply.dto.ReviewReplyCommandResultEvent;
+import com.example.cafeordersystem.reply.service.ReviewReplyCommandService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

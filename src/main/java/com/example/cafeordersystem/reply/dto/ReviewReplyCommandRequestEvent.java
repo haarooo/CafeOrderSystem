@@ -1,4 +1,4 @@
-package com.example.cafeordersystem.review.reply.dto;
+package com.example.cafeordersystem.reply.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
